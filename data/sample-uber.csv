@@ -1,0 +1,15 @@
+# run this in a Python REPL or a small script to generate a test CSV
+import pandas as pd
+from datetime import datetime, timedelta
+import random
+
+rows = []
+start = datetime(2014, 4, 1, 0, 0)
+for i in range(200):
+    dt = start + timedelta(minutes=random.randint(0, 60*24*30))  # random within ~30 days
+    lat = 40.7 + random.uniform(-0.03, 0.03)
+    lon = -74.0 + random.uniform(-0.03, 0.03)
+    rows.append({"DateTime": dt.strftime("%Y-%m-%d %H:%M:%S"), "Lat": lat, "Lon": lon, "Base": random.choice(["B02512","B02682","B02764"])})
+
+pd.DataFrame(rows).to_csv("data/sample-uber.csv", index=False)
+print("Wrote data/sample-uber.csv")
