@@ -1,105 +1,39 @@
-# src/preprocess.py
-import os
-import glob
 import pandas as pd
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "uber_cleaned.csv")
+def load_data(path):
+    """Load raw Uber CSV file."""
+    return pd.read_csv(path)
 
-# Common alternative names for datetime and lat/lon columns
-DATETIME_KEYS = ["date/time", "date_time", "datetime", "date", "pickup_datetime", "date/time (utc)", "date/time"]
-LAT_KEYS = ["lat", "latitude", "pickup_latitude"]
-LON_KEYS = ["lon", "lng", "longitude", "pickup_longitude", "long"]
+def clean_data(df):
+    """Clean Uber dataset (datetime, missing values, duplicates)."""
+    df = df.copy()
 
-def find_column(cols, keys):
-    cols_l = [c.lower().strip() for c in cols]
-    for k in keys:
-        if k in cols_l:
-            return cols[cols_l.index(k)]
-    # fuzzy: try if any col contains key substring
-    for k in keys:
-        for i,c in enumerate(cols_l):
-            if k in c:
-                return cols[i]
-    return None
+    # Convert columns
+    df['Date/Time'] = pd.to_datetime(df['Date/Time'], errors='coerce')
 
-def load_all_csvs(data_dir):
-    pattern = os.path.join(data_dir, "*.csv")
-    files = sorted(glob.glob(pattern))
-    if not files:
-        raise FileNotFoundError(f"No CSV files found in {data_dir}")
-    dfs = []
-    for f in files:
-        try:
-            df = pd.read_csv(f, low_memory=False)
-            print(f"[LOAD] {os.path.basename(f)} -> {df.shape[0]} rows, {df.shape[1]} cols")
-            df["__source_file"] = os.path.basename(f)
-            dfs.append(df)
-        except Exception as e:
-            print(f"[ERROR] Failed to read {f}: {e}")
-    combined = pd.concat(dfs, ignore_index=True, sort=False)
-    return combined
+    # Remove null values
+    df = df.dropna()
 
-def standardize(df):
-    # locate datetime column
-    dt_col = find_column(df.columns, DATETIME_KEYS)
-    if dt_col is None:
-        # try to infer: any column with 'time' or 'date' in name
-        for c in df.columns:
-            if "time" in c.lower() or "date" in c.lower():
-                dt_col = c
-                break
-    if dt_col is None:
-        raise RuntimeError("Could not find datetime column in dataset. Check your CSVs' headers.")
+    # Remove duplicates
+    df = df.drop_duplicates()
 
-    print(f"[INFO] Using datetime column: '{dt_col}'")
-    # parse datetimes robustly
-    df[dt_col] = pd.to_datetime(df[dt_col], errors="coerce", infer_datetime_format=True)
-    # rename to canonical name
-    df = df.rename(columns={dt_col: "pickup_datetime"})
-
-    # find lat/lon if present and rename
-    lat_col = find_column(df.columns, LAT_KEYS)
-    lon_col = find_column(df.columns, LON_KEYS)
-    if lat_col and lon_col:
-        df = df.rename(columns={lat_col: "lat", lon_col: "lon"})
-        # drop obviously bad coords
-        df = df[(df["lat"].notna()) & (df["lon"].notna())]
-        # filter extreme values (optionally)
-        df = df[(df["lat"].between(-90, 90)) & (df["lon"].between(-180, 180))]
-    else:
-        print("[WARN] lat/lon columns not found — mapping visualizations will be limited.")
-
-    # drop rows with invalid datetimes
-    before = len(df)
-    df = df[df["pickup_datetime"].notna()]
-    dropped = before - len(df)
-    print(f"[INFO] Dropped {dropped} rows with invalid datetimes")
-
-    # feature extraction
-    df["hour"] = df["pickup_datetime"].dt.hour.astype("Int64")
-    df["date"] = df["pickup_datetime"].dt.date
-    df["day"] = df["pickup_datetime"].dt.day.astype("Int64")
-    df["weekday"] = df["pickup_datetime"].dt.day_name()
-    df["month"] = df["pickup_datetime"].dt.month.astype("Int64")
-    df["year"] = df["pickup_datetime"].dt.year.astype("Int64")
-
-    # optional: simple dedupe by datetime + lat + lon
-    if {"lat","lon"}.issubset(df.columns):
-        df = df.drop_duplicates(subset=["pickup_datetime","lat","lon"])
-    else:
-        df = df.drop_duplicates(subset=["pickup_datetime","__source_file"])
+    # Extract useful features
+    df['hour'] = df['Date/Time'].dt.hour
+    df['day'] = df['Date/Time'].dt.day
+    df['weekday'] = df['Date/Time'].dt.weekday
+    df['month'] = df['Date/Time'].dt.month
 
     return df
 
-def main():
-    print("[START] Preprocessing")
-    df = load_all_csvs(DATA_DIR)
-    df = standardize(df)
-    df.to_csv(OUTPUT_FILE, index=False)
-    print(f"[DONE] Cleaned dataset saved at: {OUTPUT_FILE}")
-    print(df.info())
-    print(df.head())
+def save_cleaned_data(df, output_path):
+    df.to_csv(output_path, index=False)
+    print(f"Cleaned dataset saved to {output_path}")
+
 
 if __name__ == "__main__":
-    main()
+    raw_path = "../data/uber-raw-data-apr14.csv"
+    cleaned_path = "../data/uber_cleaned.csv"
+
+    df = load_data(raw_path)
+    cleaned_df = clean_data(df)
+    save_cleaned_data(cleaned_df, cleaned_path)
