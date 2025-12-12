@@ -1,21 +1,23 @@
-🚖 Uber Pickups Analysis
+Uber Pickups Analysis
 
-A data analysis project exploring Uber pickups in NYC using Python, Pandas, NumPy, and Jupyter Notebooks.
-This repository includes code, environment setup instructions, and analysis guidelines for working with the fivethirtyeight/uber-pickups-in-new-york-city dataset.
+## Overview
+This project analyzes Uber pickup data in New York City and visualizes patterns in:
+- Hourly activity
+- Daily/weekly trends
+- Monthly trends
+- Latitude/Longitude pickup distribution
 
-📂 Project Structure
-uber-pickups-analysis/
-│
-├── data/                     # Dataset files (CSV files downloaded from Kaggle)
-├── notebooks/
-│     └── analysis.ipynb      # Jupyter Notebook with all analysis
-├── src/
-│     └── utils.py            # (Optional) Helper functions
-│
-├── README.md
-└── requirements.txt          # Python packages needed
+## Project Structure
+- `src/preprocess.py` → Cleans the dataset
+- `src/visualize.py` → Generates visualizations
+- `notebook/analysis.ipynb` → Full exploratory analysis
+- `data/` → Raw and cleaned datasets
 
-📦 Requirements
+## How to Run
+```bash
+pip install -r requirements.txt
+python src/preprocess.py
+python src/visualize.py
 
 Before running the project, you must install:
 
