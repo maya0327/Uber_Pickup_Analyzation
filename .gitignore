@@ -209,3 +209,4 @@ __marimo__/
 # ignore all csv in data EXCEPT small sample
 data/*.csv
 !data/sample-uber.csv
+uber_env/

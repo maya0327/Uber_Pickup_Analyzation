@@ -23,16 +23,8 @@ def plot_monthly_trips(df):
     plt.savefig("../plots/monthly_trips.png")
     plt.show()
 
-def plot_lat_long(df):
-    plt.figure(figsize=(8,6))
-    sns.scatterplot(x='Lon', y='Lat', data=df, s=10)
-    plt.title("Uber Pick-ups Location Distribution")
-    plt.savefig("../plots/location.png")
-    plt.show()
-
 if __name__ == "__main__":
     df = pd.read_csv("../data/uber_cleaned.csv")
     plot_hourly_trips(df)
     plot_weekday_trips(df)
     plot_monthly_trips(df)
-    plot_lat_long(df)
